@@ -154,16 +154,22 @@ input:focus, select:focus { border-color: var(--accent); }
     0 26px 60px rgba(0, 0, 0, .5);
 }
 
-/* the stock deck sits crosswise on the exposed trump card */
+/* stock deck on the left, exposed trump peeking out to the right toward centre */
 .stock-area {
   position: absolute; left: clamp(10px, 3.5vw, 52px); top: 50%;
+  --tw: clamp(76px, 8vw, 108px);
   transform: translateY(-50%); display: flex; align-items: center;
 }
-.trump-face { transform: rotate(90deg); z-index: 1; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.trump { order: 2; z-index: 1; margin-left: calc(var(--tw) * -0.34); display: flex; }
+.trump-face {
+  --cw: var(--tw); transform: rotate(4deg);
+  box-shadow: 0 0 0 2px var(--gold), 0 8px 14px rgba(0, 0, 0, .55);
+}
 .stock {
+  order: 1;
   --cw: clamp(84px, 9vw, 124px);
   width: var(--cw); height: calc(var(--cw) * 1.42);
-  margin-left: calc(var(--cw) * -0.42); z-index: 2;
+  z-index: 2;
   border-radius: 12px; position: relative; color: #fff;
   display: grid; place-items: center; align-content: center; gap: 2px;
   background:
