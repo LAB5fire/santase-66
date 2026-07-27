@@ -102,6 +102,8 @@ class SantaseGame {
     this.leader = nonDealer;
     this.turn = nonDealer;
     this.trick = []; // [{ playerId, card }]
+    this.awaitingResolve = false; // completed trick shown but not yet scored
+    this.pendingWinner = null;
     this.closed = false;
     this.closedBy = null;
     this.handOver = false;
@@ -248,9 +250,23 @@ class SantaseGame {
       return this.publicEvent(`${this.name(pid)} played ${cardId(card)}${meldMsg}`);
     }
 
-    // trick complete -> resolve
+    // trick complete -> keep both cards on the table; defer scoring so players
+    // can see what was played. The caller invokes resolveTrick() after a pause.
     const [a, b] = this.trick;
-    const winner = this.trickWinner(a, b);
+    this.pendingWinner = this.trickWinner(a, b);
+    this.awaitingResolve = true;
+    this.turn = null; // nobody may act during the reveal pause
+    this.log.push({ t: 'trickfull', winner: this.pendingWinner });
+    return this.publicEvent(
+      `${this.name(pid)} played ${cardId(card)}${meldMsg}. ${this.name(this.pendingWinner)} takes the trick.`
+    );
+  }
+
+  /** Apply the deferred trick: scoring, drawing, win checks. Safe to call once. */
+  resolveTrick() {
+    if (!this.awaitingResolve) return null;
+    const [a, b] = this.trick;
+    const winner = this.pendingWinner;
     const loser = this.opponentOf(winner);
     const gained = VALUE[a.card.rank] + VALUE[b.card.rank];
     this.points[winner] += gained;
@@ -258,11 +274,14 @@ class SantaseGame {
     this.wonCards[winner].push(a.card, b.card);
     this.lastTrick = { cards: [a, b], winner };
     this.trick = [];
+    this.awaitingResolve = false;
+    this.pendingWinner = null;
     this.leader = winner;
     this.turn = winner;
     this.log.push({ t: 'trick', winner, gained });
 
-    const bothEmpty = this.hands[this.players[0]].length === 0 && this.hands[this.players[1]].length === 0;
+    const bothEmpty =
+      this.hands[this.players[0]].length === 0 && this.hands[this.players[1]].length === 0;
 
     // draw phase (only if stock open and not closed and cards remain in hand)
     if (!this.closed && this.drawsLeft() > 0 && !bothEmpty) {
@@ -274,12 +293,9 @@ class SantaseGame {
     if (this.effectiveScore(winner) >= 66) {
       this.endHand({ reason: 'sixtysix', winner });
     } else if (this.hands[winner].length === 0 && this.hands[loser].length === 0) {
-      // cards exhausted
       this.endHand({ reason: 'lasttrick', winner });
     }
-
-    let msg = `${this.name(pid)} played ${cardId(card)}${meldMsg}. ${this.name(winner)} wins the trick (+${gained}).`;
-    return this.publicEvent(msg);
+    return { winner, gained };
   }
 
   draw(pid) {
@@ -392,6 +408,12 @@ class SantaseGame {
       leader: this.leader,
       turn: this.turn,
       trick: this.trick,
+      resolving: !!this.awaitingResolve,
+      trickWinner: this.awaitingResolve
+        ? this.pendingWinner
+        : this.lastTrick
+        ? this.lastTrick.winner
+        : null,
       yourHand: this.hands[pid].slice().sort(sortCards),
       opponentHandCount: this.hands[opp].length,
       // Only your own hand points are visible — the opponent's running score

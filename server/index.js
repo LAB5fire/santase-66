@@ -29,7 +29,6 @@ function broadcastRoom(room) {
     target: room.target,
     players: room.players.map((p) => ({ id: p.id, name: p.name, connected: p.connected })),
     spectators: room.spectators.map((s) => ({ id: s.id, name: s.name })),
-    chat: room.chat.slice(-30),
   };
   io.to(room.code).emit('room', meta);
 
@@ -127,15 +126,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('room:chat', ({ text }) => {
-    const room = rooms.getRoom(socket.data.roomCode);
-    if (!room) return;
-    const member = rooms.findMember(room, socket.data.playerId);
-    if (!member || !text) return;
-    room.chat.push({ name: member.name, text: String(text).slice(0, 200), at: Date.now() });
-    broadcastRoom(room);
-  });
-
   // game actions
   socket.on('game:action', (action, cb) => {
     const room = rooms.getRoom(socket.data.roomCode);
@@ -145,38 +135,48 @@ io.on('connection', (socket) => {
       return cb && cb({ ok: false, error: 'Spectators cannot act' });
     const game = room.game;
     try {
-      let ev;
       switch (action.type) {
         case 'play':
-          ev = game.play(pid, action.card, !!action.meld);
+          game.play(pid, action.card, !!action.meld);
           break;
         case 'exchange':
-          ev = game.exchangeTrump(pid);
+          game.exchangeTrump(pid);
           break;
         case 'close':
-          ev = game.close(pid);
+          game.close(pid);
           break;
         case 'nextHand':
           if (!game.handOver) throw new Error('Hand is not over');
           if (game.matchOver) throw new Error('Match is over');
           game.startHand();
-          ev = { message: 'New hand dealt' };
           break;
         case 'rematch':
           if (!game.matchOver) throw new Error('Match is not over');
           rooms.startGame(room);
-          ev = { message: 'Rematch started' };
           break;
         default:
           throw new Error('Unknown action');
       }
-      if (ev && ev.message) {
-        room.chat.push({ name: '·', text: ev.message, at: Date.now(), system: true });
-      }
       if (game.matchOver) room.status = 'finished';
       cb && cb({ ok: true });
-      broadcastRoom(room);
+      broadcastRoom(room); // shows the completed trick if a play just finished it
       pushDashboard();
+
+      // If a trick was just completed, leave both cards on the table for a
+      // beat so players can see them, then resolve and broadcast the result.
+      if (game.awaitingResolve) {
+        setTimeout(() => {
+          if (room.game !== game || !game.awaitingResolve) return;
+          try {
+            game.resolveTrick();
+            if (game.matchOver) room.status = 'finished';
+            broadcastRoom(room);
+            pushDashboard();
+          } catch (_) {
+            /* room may have been swept */
+          }
+        }, 1500);
+      }
     } catch (e) {
       cb && cb({ ok: false, error: e.message });
     }

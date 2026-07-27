@@ -130,6 +130,7 @@ input:focus, select:focus { border-color: var(--accent); }
 .trick-card { animation: drop .25s ease; }
 .trick-card.from-you { transform: translateY(14px); }
 .trick-card.from-opp { transform: translateY(-14px); }
+.trick-card.winner .playing-card { box-shadow: 0 0 0 3px var(--gold), 0 0 20px var(--gold); }
 @keyframes drop { from { opacity: 0; transform: translateY(-30px) scale(.9); } }
 
 .turn-banner { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: #00000055; padding: 6px 16px; border-radius: 20px; font-size: 13px; color: var(--ink); }

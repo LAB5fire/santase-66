@@ -104,7 +104,6 @@
       $('gameCode').textContent = room.code;
       $('gameTarget').textContent = room.target;
     }
-    renderChat(room.chat);
   });
 
   function renderLobby(room) {
@@ -197,6 +196,7 @@
     v.trick.forEach((play) => {
       const wrap = document.createElement('div');
       wrap.className = 'trick-card ' + (play.playerId === v.you ? 'from-you' : 'from-opp');
+      if (v.resolving && play.playerId === v.trickWinner) wrap.classList.add('winner');
       wrap.appendChild(Cards.cardEl(play.card));
       ta.appendChild(wrap);
     });
@@ -222,6 +222,16 @@
 
     // turn banner
     const banner = $('turnBanner');
+    if (v.resolving) {
+      const youWin = v.trickWinner === v.you;
+      banner.textContent = youWin ? 'You win the trick!' : nameFor(v, v.opponent) + ' wins the trick';
+      banner.className = 'turn-banner' + (youWin ? ' mine' : '');
+      $('meldBtn').hidden = true;
+      $('exchangeBtn').hidden = true;
+      $('closeBtn').hidden = true;
+      hideModal();
+      return; // freeze the board during the reveal pause
+    }
     if (v.handOver) {
       banner.textContent = 'Hand over';
       banner.className = 'turn-banner';
@@ -325,30 +335,6 @@
   }
   function hideModal() {
     $('modal').hidden = true;
-  }
-
-  // ---- chat / log -------------------------------------------------------
-  $('chatForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = $('chatInput').value.trim();
-    if (!text) return;
-    socket.emit('room:chat', { text });
-    $('chatInput').value = '';
-  });
-
-  function renderChat(chat) {
-    const log = $('gameLog');
-    if (!log || !chat) return;
-    log.innerHTML = '';
-    chat.forEach((m) => {
-      const el = document.createElement('div');
-      el.className = 'log-line' + (m.system ? ' system' : '');
-      el.innerHTML = m.system
-        ? `<i>${escapeHtml(m.text)}</i>`
-        : `<b>${escapeHtml(m.name)}:</b> ${escapeHtml(m.text)}`;
-      log.appendChild(el);
-    });
-    log.scrollTop = log.scrollHeight;
   }
 
   function escapeHtml(s) {

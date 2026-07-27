@@ -26,6 +26,10 @@ for (let g = 0; g < 500; g++) {
   let guard = 0;
   while (!game.matchOver) {
     if (++guard > 100000) throw new Error('runaway loop');
+    if (game.awaitingResolve) {
+      game.resolveTrick();
+      continue;
+    }
     if (game.handOver) {
       hands++;
       // total card points across both players must be <= 130 (120 + 10 last trick)
