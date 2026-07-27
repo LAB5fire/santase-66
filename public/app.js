@@ -85,10 +85,16 @@
       if (!res.ok) toast(res.error, 'error');
     });
   };
-  $('leaveBtn').onclick = () => {
+  $('leaveBtn').onclick = leaveToMenu;
+  $('menuBtn').onclick = leaveToMenu;
+
+  function leaveToMenu() {
+    if (state.view && !state.view.matchOver && !state.view.handOver) {
+      if (!confirm('Leave this game and return to the menu?')) return;
+    }
     clearSave();
-    location.reload();
-  };
+    location.href = location.pathname; // clean reload to home
+  }
 
   socket.on('room', (room) => {
     state.hostId = room.hostId;
@@ -315,6 +321,7 @@
       } else {
         body.innerHTML += '<br><small>Waiting for players to continue…</small>';
       }
+      addBtn(actions, 'Leave', 'ghost', leaveToMenu);
     }
     $('modal').hidden = false;
   }

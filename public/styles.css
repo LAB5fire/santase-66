@@ -93,8 +93,10 @@ input:focus, select:focus { border-color: var(--accent); }
 .score-chip .who { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 .score-chip b { font-size: 26px; color: var(--gold); }
 .score-chip.active { border-color: var(--accent); box-shadow: 0 0 0 2px #2f9e6f44; }
-.center-meta { text-align: center; color: var(--muted); font-size: 13px; display: flex; gap: 14px; }
+.center-meta { text-align: center; color: var(--muted); font-size: 13px; display: flex; gap: 14px; align-items: center; }
 .center-meta b { color: var(--ink); }
+.menu-btn { background: #16303d; color: var(--ink); border: 1px solid #2b4a5c; font-size: 12px; padding: 6px 12px; }
+.menu-btn:hover { background: #1d3d4d; }
 
 .opp-area, .you-area { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .opp-info, .you-info { display: flex; gap: 12px; align-items: baseline; color: var(--muted); font-size: 14px; }
