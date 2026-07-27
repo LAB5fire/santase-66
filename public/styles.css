@@ -158,15 +158,15 @@ input:focus, select:focus { border-color: var(--accent); }
 .stock-area {
   position: absolute; left: clamp(10px, 3.5vw, 52px); top: 50%;
   --sw: clamp(84px, 9vw, 124px); /* stock width */
-  --tw: clamp(76px, 8vw, 108px); /* trump card short side */
+  --tw: var(--sw); /* trump card same size as the stock */
   transform: translateY(-50%); display: flex; align-items: center;
 }
-/* exposed trump lies horizontally (long side across); 60% of it shows to the
-   right of the deck, the left 40% tucks behind the stock */
+/* exposed trump lies horizontally (long side across); 70% of it shows to the
+   right of the deck, the left 30% tucks behind the stock, vertically centred */
 .trump {
   position: absolute; z-index: 1;
   width: var(--tw); height: calc(var(--tw) * 1.42);
-  left: calc(var(--sw) - 0.358 * var(--tw));
+  left: calc(var(--sw) - 0.216 * var(--tw));
   top: calc(0.71 * var(--sw) - 0.71 * var(--tw));
 }
 .trump-face {
@@ -290,7 +290,7 @@ input:focus, select:focus { border-color: var(--accent); }
   .you-hand { --card-you: clamp(60px, 15vw, 92px); }
   .opp-hand { --card-sm: clamp(46px, 11vw, 70px); }
   .playing-card { --cw: clamp(58px, 14vw, 88px); }
-  .stock-area { --sw: clamp(66px, 17vw, 96px); --tw: clamp(58px, 15vw, 84px); }
+  .stock-area { --sw: clamp(66px, 17vw, 96px); }
   .score-chip { padding: 6px 12px; min-width: 74px; }
   .score-chip b { font-size: 24px; }
   .notice-pop { right: 8px; font-size: 13px; padding: 7px 12px; }
