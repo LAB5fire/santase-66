@@ -157,17 +157,24 @@ input:focus, select:focus { border-color: var(--accent); }
 /* stock deck on the left, exposed trump peeking out to the right toward centre */
 .stock-area {
   position: absolute; left: clamp(10px, 3.5vw, 52px); top: 50%;
-  --tw: clamp(76px, 8vw, 108px);
+  --sw: clamp(84px, 9vw, 124px); /* stock width */
+  --tw: clamp(76px, 8vw, 108px); /* trump card short side */
   transform: translateY(-50%); display: flex; align-items: center;
 }
-.trump { order: 2; z-index: 1; margin-left: calc(var(--tw) * -0.34); display: flex; }
+/* exposed trump lies horizontally (long side across); 60% of it shows to the
+   right of the deck, the left 40% tucks behind the stock */
+.trump {
+  position: absolute; z-index: 1;
+  width: var(--tw); height: calc(var(--tw) * 1.42);
+  left: calc(var(--sw) - 0.358 * var(--tw));
+  top: calc(0.71 * var(--sw) - 0.71 * var(--tw));
+}
 .trump-face {
-  --cw: var(--tw); transform: rotate(4deg);
-  box-shadow: 0 0 0 2px var(--gold), 0 8px 14px rgba(0, 0, 0, .55);
+  --cw: var(--tw); transform: rotate(90deg);
+  box-shadow: 0 0 0 2px var(--gold), 0 8px 16px rgba(0, 0, 0, .55);
 }
 .stock {
-  order: 1;
-  --cw: clamp(84px, 9vw, 124px);
+  --cw: var(--sw);
   width: var(--cw); height: calc(var(--cw) * 1.42);
   z-index: 2;
   border-radius: 12px; position: relative; color: #fff;
@@ -191,7 +198,7 @@ input:focus, select:focus { border-color: var(--accent); }
 .stock.closed { box-shadow: 2px 3px 0 -1px #16304a, 4px 6px 0 -2px #0f2740, 0 0 0 3px var(--danger), 0 14px 26px rgba(0,0,0,.5); }
 .stock.empty { opacity: .35; }
 .trump-badge {
-  --cw: clamp(84px, 9vw, 124px);
+  --cw: var(--tw);
   width: var(--cw); height: calc(var(--cw) * 1.42); border-radius: 12px;
   background: linear-gradient(160deg, #fff, #efeada); display: grid; place-items: center;
   box-shadow: var(--shadow); position: relative;
@@ -283,7 +290,7 @@ input:focus, select:focus { border-color: var(--accent); }
   .you-hand { --card-you: clamp(60px, 15vw, 92px); }
   .opp-hand { --card-sm: clamp(46px, 11vw, 70px); }
   .playing-card { --cw: clamp(58px, 14vw, 88px); }
-  .stock, .trump-badge { --cw: clamp(66px, 17vw, 96px); }
+  .stock-area { --sw: clamp(66px, 17vw, 96px); --tw: clamp(58px, 15vw, 84px); }
   .score-chip { padding: 6px 12px; min-width: 74px; }
   .score-chip b { font-size: 24px; }
   .notice-pop { right: 8px; font-size: 13px; padding: 7px 12px; }
