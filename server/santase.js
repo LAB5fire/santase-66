@@ -158,7 +158,7 @@ class SantaseGame {
       this.leader === pid &&
       this.trick.length === 0 &&
       !this.closed &&
-      this.drawsLeft() >= 2 // must be cards left to make closing meaningful
+      this.stock.length >= 2 // cannot close on the last face-down stock card
     );
   }
 
@@ -193,11 +193,15 @@ class SantaseGame {
   exchangeTrump(pid) {
     if (!this.canExchangeTrump(pid)) throw new Error('Cannot exchange trump now');
     const nine = { rank: '9', suit: this.trumpSuit };
+    const taken = this.trumpCard; // the face-up trump they pick up (e.g. the Ace)
     this.removeFromHand(pid, nine);
-    this.hands[pid].push(this.trumpCard);
+    this.hands[pid].push(taken);
     this.trumpCard = nine;
     this.log.push({ t: 'exchange', by: pid });
-    return this.publicEvent(`${this.name(pid)} exchanged the trump 9`);
+    return {
+      message: `${this.name(pid)} exchanged the trump 9`,
+      notice: { by: pid, kind: 'exchange', card: cardId(taken), suit: this.trumpSuit },
+    };
   }
 
   close(pid) {
@@ -205,7 +209,10 @@ class SantaseGame {
     this.closed = true;
     this.closedBy = pid;
     this.log.push({ t: 'close', by: pid });
-    return this.publicEvent(`${this.name(pid)} closed the stock`);
+    return {
+      message: `${this.name(pid)} closed the stock`,
+      notice: { by: pid, kind: 'close' },
+    };
   }
 
   /**
@@ -220,11 +227,13 @@ class SantaseGame {
     if (!ok) throw new Error('Illegal card');
 
     let meldMsg = '';
+    let meldNotice = null;
     if (meld) {
       if (!this.canMeld(pid, card)) throw new Error('No valid marriage on that card');
       const pts = card.suit === this.trumpSuit ? 40 : 20;
       this.melds[pid] += pts;
       meldMsg = ` and announced a ${pts === 40 ? 'royal ' : ''}marriage (+${pts})`;
+      meldNotice = { by: pid, kind: 'marriage', points: pts, suit: card.suit };
       this.log.push({ t: 'meld', by: pid, suit: card.suit, pts });
     }
 
@@ -247,7 +256,7 @@ class SantaseGame {
           this.turn = this.opponentOf(pid);
         }
       }
-      return this.publicEvent(`${this.name(pid)} played ${cardId(card)}${meldMsg}`);
+      return { message: `${this.name(pid)} played ${cardId(card)}${meldMsg}`, notice: meldNotice };
     }
 
     // trick complete -> keep both cards on the table; defer scoring so players

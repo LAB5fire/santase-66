@@ -152,6 +152,35 @@
     renderGame(view);
   });
 
+  // floating popup beside a player's cards when they announce / exchange / close
+  socket.on('notice', (n) => {
+    const mine = n.by === state.playerId;
+    let html = '';
+    if (n.kind === 'marriage') {
+      const g = Cards.SUIT_GLYPH[n.suit];
+      const red = Cards.RED[n.suit] ? ' red' : '';
+      html = `<span class="np-suit${red}">${g}</span> ${
+        n.points === 40 ? 'Royal marriage' : 'Marriage'
+      } <b>+${n.points}</b>`;
+    } else if (n.kind === 'exchange') {
+      const c = Cards.parseId(n.card);
+      const red = Cards.RED[c.suit] ? ' red' : '';
+      html = `Exchanged trump for <span class="np-card${red}">${c.rank}${Cards.SUIT_GLYPH[c.suit]}</span>`;
+    } else if (n.kind === 'close') {
+      html = 'Closed the stock';
+    } else {
+      return;
+    }
+    const area = document.querySelector(mine ? '.you-area' : '.opp-area');
+    if (!area) return;
+    const pop = document.createElement('div');
+    pop.className = 'notice-pop ' + (mine ? 'mine' : 'opp');
+    pop.innerHTML = html;
+    area.appendChild(pop);
+    setTimeout(() => pop.classList.add('leaving'), 2400);
+    setTimeout(() => pop.remove(), 3000);
+  });
+
   function renderGame(v) {
     const myTurn = v.turn === v.you && !v.handOver && state.role === 'player';
 

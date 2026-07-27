@@ -135,15 +135,16 @@ io.on('connection', (socket) => {
       return cb && cb({ ok: false, error: 'Spectators cannot act' });
     const game = room.game;
     try {
+      let result = null;
       switch (action.type) {
         case 'play':
-          game.play(pid, action.card, !!action.meld);
+          result = game.play(pid, action.card, !!action.meld);
           break;
         case 'exchange':
-          game.exchangeTrump(pid);
+          result = game.exchangeTrump(pid);
           break;
         case 'close':
-          game.close(pid);
+          result = game.close(pid);
           break;
         case 'nextHand':
           if (!game.handOver) throw new Error('Hand is not over');
@@ -159,6 +160,7 @@ io.on('connection', (socket) => {
       }
       if (game.matchOver) room.status = 'finished';
       cb && cb({ ok: true });
+      if (result && result.notice) io.to(room.code).emit('notice', result.notice);
       broadcastRoom(room); // shows the completed trick if a play just finished it
       pushDashboard();
 
