@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Santase 66 — Play with Friends</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="/" />
+</head>
+<body>
+  <div id="app">
+    <!-- HOME -->
+    <section id="home" class="screen active">
+      <div class="brand">
+        <div class="logo">66</div>
+        <h1>Santase</h1>
+        <p class="tag">The Balkan classic — play online with a friend.</p>
+      </div>
+
+      <div class="card-panel">
+        <label class="field">
+          <span>Your name</span>
+          <input id="playerName" maxlength="20" placeholder="e.g. Nikcho" autocomplete="off" />
+        </label>
+
+        <div class="split">
+          <div class="col">
+            <h3>Host a room</h3>
+            <label class="field">
+              <span>Play up to</span>
+              <select id="target">
+                <option value="7">7 game points</option>
+                <option value="11" selected>11 game points</option>
+                <option value="21">21 game points</option>
+              </select>
+            </label>
+            <button id="createBtn" class="primary">Create room</button>
+          </div>
+          <div class="divider"><span>or</span></div>
+          <div class="col">
+            <h3>Join a room</h3>
+            <label class="field">
+              <span>Room code</span>
+              <input id="joinCode" maxlength="4" placeholder="ABCD" class="code-input" autocomplete="off" />
+            </label>
+            <button id="joinBtn" class="ghost">Join with code</button>
+          </div>
+        </div>
+        <p class="hint">Share the 4-letter code with a friend. First to reach the target wins the match.</p>
+        <a class="dash-link" href="/dashboard" target="_blank">Live dashboard →</a>
+      </div>
+    </section>
+
+    <!-- LOBBY -->
+    <section id="lobby" class="screen">
+      <div class="lobby-box">
+        <h2>Room</h2>
+        <div class="code-display" id="lobbyCode">----</div>
+        <button class="copy-btn" id="copyCode">Copy code</button>
+        <div class="players-list" id="lobbyPlayers"></div>
+        <p class="waiting" id="lobbyStatus">Waiting for a second player…</p>
+        <button id="startBtn" class="primary" disabled>Start game</button>
+        <button id="leaveBtn" class="link">Leave room</button>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="game" class="screen">
+      <header class="topbar">
+        <div class="score-chip" id="oppChip"><span class="who">Opponent</span><b id="oppMatch">0</b></div>
+        <div class="center-meta">
+          <div class="room-tag">Room <b id="gameCode">----</b></div>
+          <div class="target-tag">to <b id="gameTarget">11</b></div>
+        </div>
+        <div class="score-chip you" id="youChip"><span class="who">You</span><b id="youMatch">0</b></div>
+      </header>
+
+      <div class="opp-area">
+        <div class="opp-hand" id="oppHand"></div>
+        <div class="opp-info">
+          <span id="oppName">Opponent</span>
+          <span class="pts" id="oppPts">0 pts</span>
+        </div>
+      </div>
+
+      <div class="table">
+        <div class="stock-area">
+          <div class="trump" id="trumpCard"></div>
+          <div class="stock" id="stockPile">
+            <span id="stockCount">0</span>
+            <small>stock</small>
+          </div>
+        </div>
+
+        <div class="trick-area" id="trickArea"></div>
+
+        <div class="turn-banner" id="turnBanner">Waiting…</div>
+      </div>
+
+      <div class="you-area">
+        <div class="you-info">
+          <span id="youName">You</span>
+          <span class="pts" id="youPts">0 pts</span>
+        </div>
+        <div class="you-hand" id="youHand"></div>
+        <div class="actions">
+          <button id="meldBtn" class="act" hidden>Announce marriage</button>
+          <button id="exchangeBtn" class="act" hidden>Exchange trump 9</button>
+          <button id="closeBtn" class="act" hidden>Close stock</button>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="log" id="gameLog"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" placeholder="Say something…" maxlength="200" autocomplete="off" />
+          <button type="submit">↩</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal" class="modal-backdrop" hidden>
+    <div class="modal">
+      <h2 id="modalTitle">Hand over</h2>
+      <p id="modalBody"></p>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="cards.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

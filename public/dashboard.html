@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Santase 66 — Live Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { padding: 24px clamp(12px, 4vw, 40px); }
+    .dash-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .dash-head h1 { margin: 0; font-size: 24px; display: flex; align-items: center; gap: 12px; }
+    .dash-head .logo { width: 44px; height: 44px; font-size: 22px; border-radius: 12px; }
+    .live { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+    .live .dot { background: #35d07f; box-shadow: 0 0 8px #35d07f; animation: pulse 1.6s infinite; }
+    @keyframes pulse { 50% { opacity: .35; } }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 26px; }
+    .kpi { background: linear-gradient(180deg, var(--bg2), #0d1c25); border: 1px solid #24404f; border-radius: 14px; padding: 18px 20px; }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .kpi .value { font-size: 38px; font-weight: 800; color: var(--gold); margin-top: 4px; }
+    .kpi.green .value { color: #35d07f; }
+    h2.section { font-size: 16px; color: var(--muted); font-weight: 600; margin: 0 0 12px; }
+    .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .room-card { background: var(--bg2); border: 1px solid #24404f; border-radius: 14px; padding: 16px 18px; }
+    .room-card .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .room-card .code { font-size: 24px; font-weight: 800; letter-spacing: 4px; color: var(--gold); }
+    .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
+    .badge.lobby { background: #2a2110; color: var(--gold); }
+    .badge.playing { background: #10281c; color: #35d07f; }
+    .badge.finished { background: #2a1414; color: #e05a4d; }
+    .rp { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 14px; }
+    .rp .score { margin-left: auto; color: var(--gold); font-weight: 700; }
+    .room-meta { color: var(--muted); font-size: 12px; margin-top: 10px; display: flex; justify-content: space-between; }
+    .empty-state { color: var(--muted); text-align: center; padding: 40px; grid-column: 1 / -1; }
+    a.home { color: var(--gold); text-decoration: none; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="dash-head">
+    <h1><span class="logo">66</span> Santase Dashboard</h1>
+    <div class="live"><span class="dot"></span> <span id="liveText">connecting…</span> · <a class="home" href="/">← Home</a></div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi green"><div class="label">Players online</div><div class="value" id="kPlayers">0</div></div>
+    <div class="kpi"><div class="label">Active rooms</div><div class="value" id="kRooms">0</div></div>
+    <div class="kpi"><div class="label">Games playing</div><div class="value" id="kPlaying">0</div></div>
+    <div class="kpi"><div class="label">In lobby</div><div class="value" id="kLobby">0</div></div>
+    <div class="kpi"><div class="label">Rooms created</div><div class="value" id="kTotal">0</div></div>
+  </div>
+
+  <h2 class="section">Rooms</h2>
+  <div class="rooms" id="rooms"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const $ = (id) => document.getElementById(id);
+    socket.on('connect', () => {
+      $('liveText').textContent = 'live';
+      socket.emit('dashboard:sub');
+    });
+    socket.on('disconnect', () => ($('liveText').textContent = 'disconnected'));
+    socket.on('stats', render);
+
+    function render(s) {
+      $('kPlayers').textContent = s.playersOnline;
+      $('kRooms').textContent = s.activeRooms;
+      $('kPlaying').textContent = s.playing;
+      $('kLobby').textContent = s.inLobby;
+      $('kTotal').textContent = s.totalRoomsCreated;
+
+      const wrap = $('rooms');
+      wrap.innerHTML = '';
+      if (!s.rooms.length) {
+        wrap.innerHTML = '<div class="empty-state">No active rooms. Create one from the home page!</div>';
+        return;
+      }
+      s.rooms
+        .sort((a, b) => a.ageSeconds - b.ageSeconds)
+        .forEach((r) => {
+          const el = document.createElement('div');
+          el.className = 'room-card';
+          const players = r.players
+            .map((p) => {
+              const score = r.matchPoints ? Object.values(r.matchPoints) : null;
+              return `<div class="rp"><span class="dot ${p.connected ? 'on' : 'off'}"></span>${escapeHtml(p.name)}</div>`;
+            })
+            .join('');
+          const scores =
+            r.matchPoints && r.status !== 'lobby'
+              ? `<span class="score">${Object.values(r.matchPoints).join(' — ')}</span>`
+              : '';
+          el.innerHTML = `
+            <div class="top">
+              <span class="code">${r.code}</span>
+              <span class="badge ${r.status}">${r.status}</span>
+            </div>
+            ${players || '<div class="rp empty">no players</div>'}
+            <div class="room-meta">
+              <span>${r.status === 'playing' ? 'Hand ' + r.handNumber + ' · to ' + r.target : 'target ' + r.target}</span>
+              <span>${scores}${r.spectators ? ' 👁 ' + r.spectators : ''}</span>
+            </div>`;
+          wrap.appendChild(el);
+        });
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+  </script>
+</body>
+</html>

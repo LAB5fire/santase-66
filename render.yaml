@@ -1,0 +1,15 @@
+# Render.com blueprint — deploy Santase 66 as a Docker web service.
+# 1. Push this repo to GitHub.
+# 2. In Render: New → Blueprint → pick the repo. It reads this file.
+services:
+  - type: web
+    name: santase-66
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render injects PORT automatically; the app reads process.env.PORT.
