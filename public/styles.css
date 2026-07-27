@@ -287,8 +287,10 @@ input:focus, select:focus { border-color: var(--accent); }
   .split { grid-template-columns: 1fr; }
   .divider { display: none; }
   .table { min-height: clamp(240px, 40vh, 420px); border-width: 6px; }
-  .you-hand { --card-you: clamp(60px, 15vw, 92px); }
-  .opp-hand { --card-sm: clamp(46px, 11vw, 70px); }
+  /* keep all 6 cards on a single row — size them to fit the viewport width */
+  .you-hand, .opp-hand { flex-wrap: nowrap; gap: 4px; }
+  .you-hand { --card-you: calc((100vw - 48px) / 6); }
+  .opp-hand { --card-sm: calc((100vw - 48px) / 6); }
   .playing-card { --cw: clamp(58px, 14vw, 88px); }
   .stock-area { --sw: clamp(66px, 17vw, 96px); }
   .score-chip { padding: 6px 12px; min-width: 74px; }
