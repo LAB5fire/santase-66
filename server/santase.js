@@ -152,13 +152,15 @@ class SantaseGame {
   }
 
   canClose(pid) {
+    const tricksPlayed = this.tricksWon[this.players[0]] + this.tricksWon[this.players[1]];
     return (
       !this.handOver &&
       this.turn === pid &&
       this.leader === pid &&
       this.trick.length === 0 &&
       !this.closed &&
-      this.stock.length >= 2 // cannot close on the last face-down stock card
+      this.stock.length >= 2 && // cannot close on the last face-down stock card
+      tricksPlayed >= 1 // cannot close on the opening lead (before any trick is played)
     );
   }
 
