@@ -8,7 +8,6 @@
     hostId: null,
     role: 'player',
     view: null,
-    meldArmed: false,
   };
 
   // ---- persistence for reconnects --------------------------------------
@@ -161,7 +160,7 @@
     $('youMatch').textContent = v.matchPoints[v.you] ?? 0;
     $('oppMatch').textContent = v.matchPoints[v.opponent] ?? 0;
     $('youPts').textContent = (v.effective?.[v.you] ?? v.points[v.you]) + ' pts';
-    $('oppPts').textContent = (v.effective?.[v.opponent] ?? v.points[v.opponent]) + ' pts';
+    $('oppPts').hidden = true; // opponent's running score is hidden by the rules
     $('youName').textContent = nameFor(v, v.you) + (v.dealer === v.you ? ' (dealer)' : '');
     $('oppName').textContent = nameFor(v, v.opponent) + (v.dealer === v.opponent ? ' (dealer)' : '');
     $('gameCode').textContent = state.code;
@@ -211,8 +210,10 @@
       const id = card.rank + card.suit;
       const playable = myTurn && legal.has(id);
       const el = Cards.cardEl(card, { disabled: !playable });
-      if (meldable.has(id) && myTurn) el.classList.add('meldable');
-      if (state.meldArmed && meldable.has(id)) el.classList.add('meld-armed');
+      if (meldable.has(id) && myTurn) {
+        el.classList.add('meldable');
+        el.title = 'Leading this announces the marriage (+20, or +40 in trump)';
+      }
       if (playable) {
         el.onclick = () => playCard(card, meldable.has(id));
       }
@@ -236,15 +237,11 @@
     }
     if (v.closed) banner.textContent += ' · stock closed';
 
-    // action buttons
-    const meldBtn = $('meldBtn');
-    meldBtn.hidden = !(myTurn && (v.meldable || []).length);
-    meldBtn.classList.toggle('armed', state.meldArmed);
-    meldBtn.textContent = state.meldArmed ? 'Marriage armed — pick K or Q' : 'Announce marriage';
+    // action buttons — marriages are announced automatically by leading a K/Q,
+    // so there is no meld button.
+    $('meldBtn').hidden = true;
     $('exchangeBtn').hidden = !(myTurn && v.canExchange);
     $('closeBtn').hidden = !(myTurn && v.canClose);
-
-    if (!myTurn) state.meldArmed = false;
 
     // hand / match over modal
     if (v.handOver && v.handResult) showHandOver(v);
@@ -257,18 +254,12 @@
   }
 
   function playCard(card, isMeldable) {
-    const meld = state.meldArmed && isMeldable;
-    state.meldArmed = false;
-    socket.emit('game:action', { type: 'play', card, meld }, (res) => {
+    // Leading a K or Q that completes a marriage announces it automatically.
+    socket.emit('game:action', { type: 'play', card, meld: !!isMeldable }, (res) => {
       if (!res.ok) toast(res.error, 'error');
     });
   }
 
-  $('meldBtn').onclick = () => {
-    state.meldArmed = !state.meldArmed;
-    if (state.view) renderGame(state.view);
-    if (state.meldArmed) toast('Now click the King or Queen to announce', 'info');
-  };
   $('exchangeBtn').onclick = () =>
     socket.emit('game:action', { type: 'exchange' }, (r) => !r.ok && toast(r.error, 'error'));
   $('closeBtn').onclick = () => {

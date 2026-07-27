@@ -394,13 +394,12 @@ class SantaseGame {
       trick: this.trick,
       yourHand: this.hands[pid].slice().sort(sortCards),
       opponentHandCount: this.hands[opp].length,
-      points: this.points,
-      melds: this.melds,
-      effective: {
-        [pid]: this.effectiveScore(pid),
-        [opp]: this.effectiveScore(opp),
-      },
-      tricksWon: this.tricksWon,
+      // Only your own hand points are visible — the opponent's running score
+      // is hidden, as in real Santase (revealed only when the hand ends).
+      points: { [pid]: this.points[pid] },
+      melds: { [pid]: this.melds[pid] },
+      effective: { [pid]: this.effectiveScore(pid) },
+      tricksWon: { [pid]: this.tricksWon[pid] },
       matchPoints: this.matchPoints,
       matchOver: this.matchOver,
       matchWinner: this.matchWinner,
