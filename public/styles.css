@@ -169,7 +169,8 @@ input:focus, select:focus { border-color: var(--accent); }
   left: calc(var(--sw) - 0.216 * var(--tw));
   top: calc(0.71 * var(--sw) - 0.71 * var(--tw));
 }
-.trump-face {
+/* higher specificity than .playing-card.small so the trump matches the stock size */
+.playing-card.small.trump-face {
   --cw: var(--tw); transform: rotate(90deg);
   box-shadow: 0 0 0 2px var(--gold), 0 8px 16px rgba(0, 0, 0, .55);
 }
