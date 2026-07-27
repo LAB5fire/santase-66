@@ -15,6 +15,10 @@
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 }
 * { box-sizing: border-box; }
+/* The `hidden` attribute must win over any display rule below
+   (e.g. .modal-backdrop{display:grid}), or hidden overlays stay visible
+   and swallow clicks. */
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   margin: 0;
