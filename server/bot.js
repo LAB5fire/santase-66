@@ -55,6 +55,22 @@ function hasPartner(hand, card) {
   return hand.some((c) => c.rank === partner && c.suit === card.suit);
 }
 
+function isMarriageCard(hand, card) {
+  return (card.rank === 'K' || card.rank === 'Q') && hasPartner(hand, card);
+}
+
+// How many cards of `suit` are still "out" — not in my hand and not already
+// won into a trick pile. This counts the opponent's hand, the stock, and the
+// card currently led (which is exactly what "4 left of that colour" means).
+function unseenOfSuit(game, me, suit) {
+  const opp = game.opponentOf(me);
+  let accounted = 0;
+  for (const c of game.hands[me]) if (c.suit === suit) accounted++;
+  for (const c of game.wonCards[me]) if (c.suit === suit) accounted++;
+  for (const c of game.wonCards[opp]) if (c.suit === suit) accounted++;
+  return 6 - accounted;
+}
+
 // ---- entry point ---------------------------------------------------------
 
 function chooseMove(game, me) {
@@ -125,24 +141,52 @@ function chooseLead(game, me) {
 function chooseResponse(game, me) {
   const led = game.trick[0].card;
   const trump = game.trumpSuit;
+  const hand = game.hands[me];
   const legal = game.legalPlays(me);
   const winners = legal.filter((c) => beats(led, c, trump));
   const nonWinners = legal.filter((c) => !winners.some((w) => eq(w, c)));
-  const eff = game.effectiveScore(me);
 
-  // cheapest way to win: prefer a same-suit winner over burning a trump, low value first
-  const cheapestWinner = winners.slice().sort((a, b) => {
-    const ta = a.suit === trump ? 1 : 0;
-    const tb = b.suit === trump ? 1 : 0;
-    return ta - tb || val(a) - val(b) || ord(a) - ord(b);
-  })[0];
+  const sameWinners = winners.filter((c) => c.suit === led.suit);
+  const trumpWinners = winners.filter((c) => c.suit === trump && led.suit !== trump);
 
-  if (!nonWinners.length) return cheapestWinner || legal[0]; // forced to win / only option
-  const ledHigh = val(led) >= 10; // capturing an Ace/Ten is worth it
-  const worthIt = cheapestWinner && (ledHigh || eff >= 60 || val(led) + val(cheapestWinner) >= 13);
-  if (worthIt) return cheapestWinner;
+  // We can beat it in-suit — take it. Don't hoard high cards.
+  if (sameWinners.length) {
+    if (led.suit === trump) {
+      // trump vs trump: win as cheaply as possible to conserve trump strength
+      return sameWinners.slice().sort((a, b) => ord(a) - ord(b))[0];
+    }
+    const desc = sameWinners.slice().sort((a, b) => ord(b) - ord(a));
+    const highest = desc[0];
+    const lowest = desc[desc.length - 1];
+    // Exception: near the end of the deck with a long suit, win with the low
+    // card now and keep the *Ace* to grab a second trick with it later.
+    const nearEnd = game.stock.length > 0 && game.stock.length <= 3;
+    if (highest.rank === 'A' && !eq(highest, lowest) && nearEnd && unseenOfSuit(game, me, led.suit) >= 4) {
+      return lowest;
+    }
+    // otherwise cash the highest winner (Ace/Ten) — but don't break up a
+    // marriage if a plain card also wins the trick
+    let choice = highest;
+    if (isMarriageCard(hand, choice)) {
+      const alt = desc.find((c) => !isMarriageCard(hand, c));
+      if (alt) choice = alt;
+    }
+    return choice;
+  }
 
-  // duck: throw the least valuable non-winner (prefer low non-trump)
+  // Void in the led suit: only spend a trump to capture points or chase 66.
+  if (trumpWinners.length) {
+    const valuable = val(led) >= 10 || game.effectiveScore(me) >= 60;
+    if (valuable || nonWinners.length === 0) {
+      return trumpWinners.slice().sort((a, b) => ord(a) - ord(b))[0]; // cheapest trump
+    }
+  }
+
+  if (nonWinners.length === 0) {
+    return winners.slice().sort((a, b) => ord(b) - ord(a))[0] || legal[0];
+  }
+
+  // Can't/shouldn't win: throw the least valuable junk, keep trumps.
   return nonWinners.slice().sort((a, b) => {
     const ta = a.suit === trump ? 1 : 0;
     const tb = b.suit === trump ? 1 : 0;
