@@ -71,27 +71,11 @@ function unseenOfSuit(game, me, suit) {
   return 6 - accounted;
 }
 
-// Is there a trump ranked above `card` that I don't hold and that hasn't been
-// played? If so, `card` can still be captured by the opponent later.
-function higherTrumpOut(game, me, card) {
-  const trump = game.trumpSuit;
-  const opp = game.opponentOf(me);
-  for (const r of ['A', '10', 'K', 'Q', 'J']) {
-    if (ORDER[r] <= ORDER[card.rank]) continue;
-    if (game.hands[me].some((c) => c.suit === trump && c.rank === r)) continue; // I control it
-    const played =
-      game.wonCards[me].some((c) => c.suit === trump && c.rank === r) ||
-      game.wonCards[opp].some((c) => c.suit === trump && c.rank === r);
-    if (!played) return true;
-  }
-  return false;
-}
-
 // Choose which trump to spend when trumping a (valuable) non-trump lead.
 // - reserve the trump 9 for a possible exchange (unless that would force the Ace)
-// - within a run of touching trumps, cash the most valuable one that is still
-//   vulnerable to a higher trump (bank it before it gets captured)
-// - otherwise spend the lowest to conserve strength
+// - within a run of touching trumps, take with the *biggest* one: it banks the
+//   most points and the lower touching cards keep the same winning power
+// - a lone low trump above a gap is just spent as-is (conserve)
 function pickTrump(game, me, trumps) {
   const asc = trumps.slice().sort((a, b) => ord(a) - ord(b));
   const exchangeLive = game.stock.length > 0 && game.trumpCard && game.trumpCard.rank !== '9';
@@ -107,9 +91,7 @@ function pickTrump(game, me, trumps) {
     if (idx(cands[i].rank) === idx(run[run.length - 1].rank) + 1) run.push(cands[i]);
     else break;
   }
-  const vulnerable = run.filter((c) => val(c) >= 4 && higherTrumpOut(game, me, c));
-  if (vulnerable.length) return vulnerable.sort((a, b) => val(b) - val(a))[0];
-  return run[0];
+  return run[run.length - 1]; // the biggest card of the touching run
 }
 
 // ---- entry point ---------------------------------------------------------
