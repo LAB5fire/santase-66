@@ -71,6 +71,47 @@ function unseenOfSuit(game, me, suit) {
   return 6 - accounted;
 }
 
+// Is there a trump ranked above `card` that I don't hold and that hasn't been
+// played? If so, `card` can still be captured by the opponent later.
+function higherTrumpOut(game, me, card) {
+  const trump = game.trumpSuit;
+  const opp = game.opponentOf(me);
+  for (const r of ['A', '10', 'K', 'Q', 'J']) {
+    if (ORDER[r] <= ORDER[card.rank]) continue;
+    if (game.hands[me].some((c) => c.suit === trump && c.rank === r)) continue; // I control it
+    const played =
+      game.wonCards[me].some((c) => c.suit === trump && c.rank === r) ||
+      game.wonCards[opp].some((c) => c.suit === trump && c.rank === r);
+    if (!played) return true;
+  }
+  return false;
+}
+
+// Choose which trump to spend when trumping a (valuable) non-trump lead.
+// - reserve the trump 9 for a possible exchange (unless that would force the Ace)
+// - within a run of touching trumps, cash the most valuable one that is still
+//   vulnerable to a higher trump (bank it before it gets captured)
+// - otherwise spend the lowest to conserve strength
+function pickTrump(game, me, trumps) {
+  const asc = trumps.slice().sort((a, b) => ord(a) - ord(b));
+  const exchangeLive = game.stock.length > 0 && game.trumpCard && game.trumpCard.rank !== '9';
+  let cands = asc;
+  if (exchangeLive && asc.length > 1 && asc[0].rank === '9') {
+    const rest = asc.slice(1);
+    if (rest.some((c) => c.rank !== 'A')) cands = rest; // keep the 9 for the exchange
+  }
+  const seq = ['9', 'J', 'Q', 'K', '10', 'A']; // low -> high
+  const idx = (r) => seq.indexOf(r);
+  const run = [cands[0]];
+  for (let i = 1; i < cands.length; i++) {
+    if (idx(cands[i].rank) === idx(run[run.length - 1].rank) + 1) run.push(cands[i]);
+    else break;
+  }
+  const vulnerable = run.filter((c) => val(c) >= 4 && higherTrumpOut(game, me, c));
+  if (vulnerable.length) return vulnerable.sort((a, b) => val(b) - val(a))[0];
+  return run[0];
+}
+
 // ---- entry point ---------------------------------------------------------
 
 function chooseMove(game, me) {
@@ -174,11 +215,12 @@ function chooseResponse(game, me) {
     return choice;
   }
 
-  // Void in the led suit: only spend a trump to capture points or chase 66.
+  // Void in the led suit: only spend a trump to capture points or chase 66,
+  // and choose *which* trump smartly (cash vulnerable highs, keep the 9).
   if (trumpWinners.length) {
     const valuable = val(led) >= 10 || game.effectiveScore(me) >= 60;
     if (valuable || nonWinners.length === 0) {
-      return trumpWinners.slice().sort((a, b) => ord(a) - ord(b))[0]; // cheapest trump
+      return pickTrump(game, me, trumpWinners);
     }
   }
 
