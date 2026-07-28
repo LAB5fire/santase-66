@@ -48,6 +48,13 @@
     });
   };
 
+  $('botBtn').onclick = () => {
+    socket.emit('room:create', { name: nameVal(), target: $('target').value, vsBot: true }, (res) => {
+      if (!res.ok) return toast(res.error, 'error');
+      enterRoom(res, true); // game starts immediately; skip the lobby
+    });
+  };
+
   $('joinBtn').onclick = () => {
     const code = $('joinCode').value.trim().toUpperCase();
     if (code.length < 4) return toast('Enter a 4-letter code', 'error');
@@ -62,14 +69,16 @@
     e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   });
 
-  function enterRoom(res) {
+  function enterRoom(res, skipLobby) {
     state.playerId = res.playerId;
     state.code = res.code;
     state.hostId = res.hostId;
     state.role = res.role || 'player';
     save();
-    show('lobby');
-    $('lobbyCode').textContent = res.code;
+    if (!skipLobby) {
+      show('lobby');
+      $('lobbyCode').textContent = res.code;
+    }
   }
 
   // ---- lobby ------------------------------------------------------------

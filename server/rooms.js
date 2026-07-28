@@ -59,6 +59,15 @@ class RoomManager {
     return s;
   }
 
+  addBot(room) {
+    const id = 'bot_' + Math.random().toString(36).slice(2, 8);
+    const bot = { id, name: 'Computer 🤖', connected: true, role: 'player', isBot: true };
+    room.players.push(bot);
+    room.botId = id;
+    room.vsBot = true;
+    return bot;
+  }
+
   getRoom(code) {
     return this.rooms.get((code || '').toUpperCase());
   }

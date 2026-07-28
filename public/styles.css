@@ -73,6 +73,8 @@ input:focus, select:focus { border-color: var(--accent); }
 .split { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch; margin-top: 6px; }
 .split .col h3 { margin: 4px 0 12px; font-size: 15px; }
 .split button { width: 100%; }
+.bot-btn { margin-top: 10px; background: #16303d; color: var(--ink); border: 1.5px solid #2b4a5c; font-weight: 600; }
+.bot-btn:hover { background: #1d3d4d; border-color: var(--gold); }
 .divider { display: grid; place-items: center; position: relative; color: var(--muted); }
 .divider::before { content: ""; position: absolute; top: 0; bottom: 0; width: 1px; background: #24404f; }
 .divider span { background: var(--bg2); padding: 6px 0; z-index: 1; font-size: 13px; }
